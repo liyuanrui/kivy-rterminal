@@ -8,7 +8,8 @@ run qpython online, the pythonic tool for remote execution and deployment
 """
 __title__ = "Run QPython Online"
 
-import os,sys,zipfile,qpy
+import os,sys,zipfile,qpy,urllib2
+from contextlib import closing
 ROOT    = "/sdcard/qpython"
 os.chdir(qpy.home)
 
@@ -35,13 +36,11 @@ def checkmodule(module):
 def first_welcome():
     cfabric=checkmodule('fabric')
     ckivy=checkmodule('kivy')
-    cwget=checkmodule('wget')
     cmd=checkmodule('kivymd')
     mm=[]
     if cfabric:mm.append('fabric-qpython')
     if ckivy:mm.append('kivy-qpython')
     if cmd:mm.append('kivymd-qpython')
-    if cwget:mm.append('wget')
     mm2=' and '.join(mm)
     
     msg = __doc__+"\n\n"\
@@ -52,18 +51,10 @@ def first_welcome():
     droid.dialogShow()
     response = droid.dialogGetResponse().result
     if response['which'] == 'positive':
-        #droid.dialogCreateSpinnerProgress(title, "Installing ...")
         if cfabric:os.system(sys.executable+" "+sys.prefix+"/bin/pip install fabric-qpython -i  http://qpypi.qpython.org/simple  --extra-index-url  https://pypi.python.org/simple/")
+        if cmd:os.system(sys.executable+" "+sys.prefix+"/bin/pip install kivymd-qpython -i  http://qpypi.qpython.org/simple  --extra-index-url  https://pypi.python.org/simple/")
         if ckivy:os.system(sys.executable+" "+sys.prefix+"/bin/pip install kivy-qpython -i  http://qpypi.qpython.org/simple  --extra-index-url  https://pypi.python.org/simple/")
-        if cwget:os.system(sys.executable+" "+sys.prefix+"/bin/pip install wget")
-        try:
-            import wget
-        except:
-            os.system('python-android5 '+__file__)
-            sys.exit()
-        else:
-            download()
-        #droid.dialogDismiss()
+        download()
 
         message = 'Ok, run kivy project qpython_run_online_master and set your host config'
         droid.dialogCreateAlert(__title__, message)
@@ -76,17 +67,11 @@ def first_welcome():
 
 
 def download():
-    import wget
     url='http://github.com/liyuanrui/qpython_run_online/archive/master.zip'
-    while True:
-        try:
-            zf=zipfile.ZipFile('qpython_run_online-master.zip','r')
-            zf.close()
-            break
-        except:
-            if os.path.exists('qpython_run_online-master.zip'):
-                os.remove('qpython_run_online-master.zip')
-            wget.download(url)
+    with closing(urllib2.urlopen(url)) as h:
+        r=h.read()
+        with open('qpython_run_online-master.zip','wb') as f:
+            f.write(r)
 
     zfile=zipfile.ZipFile('qpython_run_online-master.zip','r')
     zfile.extractall('projects')
@@ -97,7 +82,6 @@ try:
     import kivy
     import kivymd
     import fabric
-    import wget
     os.chdir('projects/qpython_run_online-master')
 except:
     first_welcome()
