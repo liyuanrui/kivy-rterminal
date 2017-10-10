@@ -17,14 +17,14 @@
         id:hostname
         hint_text:'hostname(user@ip:port)'
         text:'root@127.0.0.1:22'
-        size_hint:(1,0.2)
+        size_hint:(1,0.3)
     Label:
         size_hint_y:None
         height:'3dp'
     MDTextField:
         id:password
         hint_text:'password'
-        size_hint:(1,0.2)
+        size_hint:(1,0.3)
     Label:
         size_hint_y:None
         height:'3dp'
@@ -32,7 +32,7 @@
         id:shellcommand
         hint_text:'shell command'
         text:'python'
-        size_hint:(1,0.2)
+        size_hint:(1,0.3)
     Label:
         size_hint_y:None
         height:'3dp'
@@ -40,9 +40,9 @@
         id:runcommand
         hint_text:'run program command'
         text:'python'
-        size_hint:(1,0.2)
+        size_hint:(1,0.3)
     MDRaisedButton:
         id:action
-        size_hint:(1,0.4)
+        size_hint:(1,0.3)
         on_release:root.write()
     MDLabel:
