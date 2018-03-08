@@ -1,5 +1,48 @@
 #coding=utf-8
 #qpy:kivy
+# -------------------------------------
+#$PYTHONHOME/bin/online2.py
+onlinePy='''
+#coding=utf-8
+import os,sys
+from fabric.api import env,run,put,output
+env.hosts=['{}']
+env.password='{}'
+output['running']=False
+output['status']=False
+output['aborts']=True
+env.output_prefix=False
+pyhome=os.popen('echo $PYTHONHOME').read().strip()
+os.chdir(pyhome+'/bin')
+def shell():run('{}')
+    
+def file(sfile):
+    dfile=sfile.split('/')[-1]
+    put(sfile,dfile)
+    run('{} %s'%dfile)
+    
+if __name__ == '__main__':
+    argv=[i for i in sys.argv if i]
+    if len(argv) < 2:
+        os.system('fab -f online2.py shell')
+    else:
+        os.system('fab -f online2.py file:%s'%argv[1])
+'''
+
+#$PYTHONHOME/bin/qpython-android5.sh A
+qpython_android5='''
+#!/system/bin/sh
+DIR=${0%/*}
+. $DIR/init.sh && $DIR/python-android5 "$@" && $DIR/end.sh
+'''
+
+#$PYTHONHOME/bin/qpython-android5.sh B
+qpython_android6='''
+#!/system/bin/sh
+DIR=${0%/*}
+. $DIR/init.sh && $DIR/python-android5 $DIR/online2.py "$@" && $DIR/end.sh
+'''
+# -------------------------------------
 
 import os
 import re
@@ -10,65 +53,43 @@ from kivy.core.window import WindowBase
 from kivymd.theming import ThemeManager
 
 
-def readsettings():
-    pyhome=os.popen('echo $PYTHONHOME').read().strip()
-    pyfile=os.path.join(pyhome,'bin/online.py')
-    if os.path.exists(pyfile):
-        with open(pyfile) as f:
-            r=f.read()
-        hostname=re.findall("env.hosts=\['(.*?)'\]",r)[0]
-        password=re.findall("env.password='(.*?)'",r)[0]
-        shellcommand=re.findall("run\('(.*?)'\)#shell",r)[0]
-        runcommand=re.findall("run\('(.*?) \%s && rm -rf \%s'%\(dfile,dfile\)\)#run",r)[0]
-    else:
-        hostname='root@127.0.0.1:22'
-        password='passwd'
-        shellcommand='python'
-        runcommand='python'
-    return hostname,password,shellcommand,runcommand
 
-def writesettings(hostname,password,shellcommand,runcommand):
+def getconfig():
     pyhome=os.popen('echo $PYTHONHOME').read().strip()
-    pyfile=os.path.join(pyhome,'bin/online.py')
-    with open('online.py') as f:
-        r=f.read()
-    old_hostname=re.findall("env.hosts=\['.*?'\]",r)[0]
-    old_password=re.findall("env.password='.*?'",r)[0]
-    old_shellcommand=re.findall("run\('.*?'\)#shell",r)[0]
-    old_runcommand=re.findall("run\('.*? \%s && rm -rf \%s'%\(dfile,dfile\)\)#run",r)[0]
-    r=r.replace(old_hostname,"env.hosts=['%s']"%hostname.strip())
-    r=r.replace(old_password,"env.password='%s'"%password.strip())
-    r=r.replace(old_shellcommand,"run('%s')#shell"%shellcommand.strip())
-    r=r.replace(old_runcommand,"run('"+runcommand.strip()+" %s && rm -rf %s'%(dfile,dfile))#run")
-    with open(pyfile,'w') as f:
-        f.write(r)
+    pyfile=os.path.join(pyhome,'bin/online2.py')
+    if not os.path.exists(pyfile):
+        with open(pyfile,'w') as f:
+            f.write(onlinePy.format('pi@127.0.0.1:22','12345678','python','python'))
+    with open(pyfile,'r') as f:r=f.read()
+    hostname=re.findall("env\.hosts=\['(.*?)'\]",r)[0]
+    password=re.findall("env\.password='(.*?)'",r)[0]
+    command=re.findall("def shell\(\)\:run\('(.*?)'\)",r)[0]
+    return hostname,password,command
     
-def writesh(status):
+    
+def setconfig(hostname,password,command):
     pyhome=os.popen('echo $PYTHONHOME').read().strip()
-    pyfile1=os.path.join(pyhome,'bin/qpython.sh')
-    pyfile2=os.path.join(pyhome,'bin/qpython-android5.sh')
-    if status:
-        with open('new_qpython.sh') as f:
-            r1=f.read()
-        with open('new_qpython-android5.sh') as f:
-            r2=f.read()
-    else:
-        with open('qpython.sh') as f:
-            r1=f.read()
-        with open('qpython-android5.sh') as f:
-            r2=f.read()
-    with open(pyfile1,'w') as f:
-        f.write(r1)
-    with open(pyfile2,'w') as f:
-        f.write(r2)
+    pyfile=os.path.join(pyhome,'bin/online2.py')
+    pydro =os.path.join(pyhome,'bin/qpython-android5.sh')
+    with open(pyfile,'w') as f:f.write(onlinePy.format(hostname,password,command,command))
+    with open(pydro,'w') as f:f.write(qpython_android6)
 
-def readsh():
+
+def retconfig():
     pyhome=os.popen('echo $PYTHONHOME').read().strip()
-    pyfile1=os.path.join(pyhome,'bin/qpython.sh')
-    pyfile2=os.path.join(pyhome,'bin/qpython-android5.sh')
-    with open(pyfile1) as f:r1=f.read()
-    with open(pyfile2) as f:r2=f.read()
-    if 'online.py' in r1 and 'online.py' in r2:
+    pyfile=os.path.join(pyhome,'bin/online2.py')
+    pydro =os.path.join(pyhome,'bin/qpython-android5.sh')
+    with open(pydro,'w') as f:
+        f.write(qpython_android5)
+
+
+
+
+def getstatus():
+    pyhome=os.popen('echo $PYTHONHOME').read().strip()
+    pyfile=os.path.join(pyhome,'bin/qpython-android5.sh')
+    with open(pyfile) as f:r=f.read()
+    if 'online2.py' in r:
         return True
     else:
         return False
@@ -77,20 +98,18 @@ def readsh():
 class MyLayout(BoxLayout):
     def write(self):
         status=self.ids.status.text
-        dutton=self.ids.action.text
-        if 'local' in status:
+        if 'Local' in status:
             hostname=self.ids.hostname.text
             password=self.ids.password.text
-            shellcommand=self.ids.shellcommand.text
-            runcommand=self.ids.runcommand.text
-            writesettings(hostname,password,shellcommand,runcommand)
-            writesh(True)
-            self.ids.status.text='Status: remote running'
+            command=self.ids.command.text
+            setconfig(hostname,password,command)
+
+            self.ids.status.text='Status: Remote'
             self.ids.action.text='run local'
         else:
-            writesh(False)
-            self.ids.status.text='Status: local running'
+            self.ids.status.text='Status: Local'
             self.ids.action.text='run remote'
+            retconfig()
 
 
 class MainApp(App):
@@ -99,17 +118,16 @@ class MainApp(App):
         self.theme_cls.theme_style='Dark'
         return MyLayout()
     def on_start(self):
-        status=readsh()
-        hostname,password,shellcommand,runcommand=readsettings()
+        status=getstatus()
+        hostname,password,command=getconfig()
         self.root.ids.hostname.text=hostname
         self.root.ids.password.text=password
-        self.root.ids.shellcommand.text=shellcommand
-        self.root.ids.runcommand.text=runcommand
+        self.root.ids.command.text=command
         if status:
-            self.root.ids.status.text='Status: remote running'
+            self.root.ids.status.text='Status: Remote'
             self.root.ids.action.text='run local'
         else:
-            self.root.ids.status.text='Status: local running'
+            self.root.ids.status.text='Status: Local'
             self.root.ids.action.text='run remote'
         
 
