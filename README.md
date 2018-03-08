@@ -1,5 +1,3 @@
-Run qpython online
-
 ### Document
 
 1. download kivy-rterminal to '/sdcard/qpython/projects/'
